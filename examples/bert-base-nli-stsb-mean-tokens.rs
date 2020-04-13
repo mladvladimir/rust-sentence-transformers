@@ -7,6 +7,7 @@ use rust_sentence_transformers::model::SentenceTransformer;
 fn main() -> failure::Fallible<()> {
 
     let device = Device::Cpu;
+
     let sentences = [
         "Bushnell is located at 40°33′6″N 90°30′29″W (40.551667, -90.507921).",
         "According to the 2010 census, Bushnell has a total area of 2.138 square miles (5.54 km2), of which 2.13 square miles (5.52 km2) (or 99.63%) is land and 0.008 square miles (0.02 km2) (or 0.37%) is water.",
@@ -27,10 +28,10 @@ fn main() -> failure::Fallible<()> {
     ];
 
     let embedder = SentenceTransformer::new(
-        Path::new("/path/to/sentence-tranformers-model/bert-base-nli-stsb-mean-tokens"),
+        Path::new("/media/vladimir/1TB_volume/models/bert-base-nli-stsb-mean-tokens"),
         device)?;
 
-    let embedings = &embedder.encode(sentences.to_vec(), 8);
+    let embedings = &embedder.encode(sentences.to_vec(), 8).len();
     println!("{:?}", embedings);
     Ok(())
 }

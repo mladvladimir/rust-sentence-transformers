@@ -5,7 +5,7 @@ Rust port of https://github.com/UKPLab/sentence-transformers
 - Inference supported, only.
 - Built on top of [rust-bert](https://github.com/guillaume-be/rust-bert).
 
-```$xslt
+```rust
 
 use std::path::{Path, PathBuf};
 
