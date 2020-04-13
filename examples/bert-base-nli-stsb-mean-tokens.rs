@@ -28,10 +28,10 @@ fn main() -> failure::Fallible<()> {
     ];
 
     let embedder = SentenceTransformer::new(
-        Path::new("/media/vladimir/1TB_volume/models/bert-base-nli-stsb-mean-tokens"),
+        Path::new("/path/to/bert-base-nli-stsb-mean-tokens"),
         device)?;
 
-    let embedings = &embedder.encode(sentences.to_vec(), 8).len();
+    let embedings = &embedder.encode(sentences.to_vec(), 8);
     println!("{:?}", embedings);
     Ok(())
 }
