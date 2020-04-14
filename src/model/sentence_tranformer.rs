@@ -8,8 +8,8 @@ use crate::model::pooling::{Pooling, PoolingConfig};
 
 
 pub struct SentenceTransformer {
-    bert: Bert,
-    pooling: Pooling,
+    pub bert: Bert,
+    pub pooling: Pooling,
 }
 
 fn argsort<T: Ord>(v: &[T]) -> Vec<usize> {
