@@ -1,6 +1,4 @@
-use std::path::Path;
-
-use std::collections::HashMap;
+use std::f32;
 use serde::{Deserialize, Serialize};
 use tch::{Tensor, nn, Kind};
 use rust_bert::Config;
@@ -55,39 +53,44 @@ impl Pooling {
     pub fn forward_t(&self,
                    features: Features) -> Features {
 
-//      Pooling strategy
         let mut output_vectors = Vec::new();
 
+
+        //      Pooling strategy
         if self.pooling_mode_cls_token {
             output_vectors.push(features.cls_token_embeddings.as_ref().unwrap().shallow_clone());
         }
 
 
+        if self.pooling_mode_max_tokens {
+            let input_mask_expanded = features.input_mask
+                .as_ref()
+                .unwrap()
+                .unsqueeze(-1)
+                .expand(&features.token_embeddings.as_ref().unwrap().size(), false)
+                .to_kind(Kind::Float);
+            let token_embeddings = features.token_embeddings
+                .as_ref()
+                .unwrap()
+                .where1(&input_mask_expanded.ne(0), &Tensor::from(f32::MIN));
 
-//        output_vectors =
-//            if self.pooling_mode_max_tokens {
-//            let input_mask_expanded = features.input_mask
-//                .unsqueeze(-1)
-//                .expand(&features.token_embeddings.size(), false)
-//                .to_kind(Kind::Float);
-//                Vec::<i64>::from(&features.token_embeddings).iter().filter(|x||);
-//            output_vectors.push(max_over_time);
-//        }
+            let max_over_time = token_embeddings.max2(1, false).0;
+            &output_vectors.push(max_over_time);
+            }
 
-        output_vectors = if self.pooling_mode_mean_tokens || self.pooling_mode_mean_sqrt_len_tokens {
 
-                let input_mask_expanded = features.input_mask
+        if self.pooling_mode_mean_tokens || self.pooling_mode_mean_sqrt_len_tokens {
+
+            let input_mask_expanded = features.input_mask
                     .as_ref()
                     .unwrap()
                     .unsqueeze(-1)
                     .expand(&features.token_embeddings.as_ref().unwrap().size(), false)
                     .to_kind(Kind::Float);
-
-
-            let mut sum_embeddings = Tensor::sum1(&(features.token_embeddings.as_ref().unwrap() * input_mask_expanded.copy()),
-                                                  &[1],
-                                                  false,
-                                                  Kind::Float);
+            let sum_embeddings = Tensor::sum1(&(features.token_embeddings.as_ref().unwrap() * input_mask_expanded.copy()),
+                                              &[1],
+                                              false,
+                                              Kind::Float);
 
             //    #If tokens are weighted (by WordWeights layer), feature 'token_weights_sum' will be present
             let mut sum_mask = match &features.token_weights_sum {
@@ -99,16 +102,17 @@ impl Pooling {
             let sum_mask = sum_mask.clamp_min_(1e-9);
 
             if self.pooling_mode_mean_tokens {
-                    output_vectors.push(&sum_embeddings / &sum_mask);
-                }
+                output_vectors.push(&sum_embeddings / &sum_mask);
+            }
 
-                if self.pooling_mode_mean_sqrt_len_tokens {
-                    output_vectors.push(&sum_embeddings / &sum_mask.sqrt())
-                }
-                output_vectors
-            } else {
-                output_vectors
-            };
+            if self.pooling_mode_mean_sqrt_len_tokens {
+                output_vectors.push(&sum_embeddings / &sum_mask.sqrt())
+            }
+
+            &output_vectors
+        } else {
+            &output_vectors
+        };
 
         let output_vector = Tensor::cat(&output_vectors, 1);
         Features {
