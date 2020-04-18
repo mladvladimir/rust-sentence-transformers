@@ -27,7 +27,7 @@ pub struct Pooling {
 
 
 impl Pooling {
-    pub fn new(p: &nn::Path,
+    pub fn new(_p: &nn::Path,
                config: &PoolingConfig) -> Pooling {
 
         let pooling_mode_cls_token = if let Some(value) = config.pooling_mode_cls_token { value } else { false };
@@ -54,7 +54,6 @@ impl Pooling {
                    features: Features) -> Features {
 
         let mut output_vectors = Vec::new();
-
 
         //      Pooling strategy
         if self.pooling_mode_cls_token {
@@ -87,14 +86,14 @@ impl Pooling {
                     .unsqueeze(-1)
                     .expand(&features.token_embeddings.as_ref().unwrap().size(), false)
                     .to_kind(Kind::Float);
-            let sum_embeddings = Tensor::sum1(&(features.token_embeddings.as_ref().unwrap() * input_mask_expanded.copy()),
+            let sum_embeddings = Tensor::sum1(&(features.token_embeddings.as_ref().unwrap() * input_mask_expanded.as_ref()),
                                               &[1],
                                               false,
                                               Kind::Float);
 
             //    #If tokens are weighted (by WordWeights layer), feature 'token_weights_sum' will be present
             let mut sum_mask = match &features.token_weights_sum {
-                Some(value) => value.copy().unsqueeze(-1).expand(&sum_embeddings.size(), false),
+                Some(value) => value.shallow_clone().unsqueeze(-1).expand(&sum_embeddings.size(), false),
                 None => input_mask_expanded.sum1(&[1], false, Kind::Float)
             };
 

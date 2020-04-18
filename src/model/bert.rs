@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use tch::{Tensor, nn, Kind, Device, no_grad};
-use tch::nn::{Module, VarStore};
+use tch::{Tensor, nn, Device, no_grad};
+use tch::nn::VarStore;
 use rust_bert::Config;
 use rust_bert::bert::{BertModel, BertEmbeddings, BertConfig};
 
@@ -89,7 +89,7 @@ impl Bert {
         let cls_token_id = tokenizer.convert_tokens_to_ids(&[String::from(BertVocab::cls_value())].to_vec())[0];
         let sep_token_id = tokenizer.convert_tokens_to_ids(&[String::from(BertVocab::sep_value())].to_vec())[0];
 
-        vs.load(Path::new(&weights_path));
+        vs.load(Path::new(&weights_path)).expect("Failed to load weights!");
 
         Bert {bert, tokenizer, max_seq_length, cls_token_id, sep_token_id,
             vs
@@ -118,6 +118,13 @@ impl Bert {
 
     pub fn tokenize(&self, text: &str) -> Vec<i64> {
         self.tokenizer.convert_tokens_to_ids(&self.tokenizer.tokenize(text))
+    }
+
+    pub fn tokenize_multithreaded(&self, text_list: Vec<&str>) -> Vec<Vec<i64>> {
+        MultiThreadedTokenizer::tokenize_list(&self.tokenizer, text_list)
+            .iter()
+            .map(|sentence_tokens| self.tokenizer.convert_tokens_to_ids(sentence_tokens))
+            .collect()
     }
 
     pub fn get_sentence_features(&self, tokens: &[i64], pad_seq_length: usize) -> (Vec<i64>, Vec<i64>, Vec<i64>, Vec<i64>) {
